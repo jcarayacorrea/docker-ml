@@ -1,0 +1,28 @@
+volumes:
+    notebooks:
+        driver_opts:
+            type: cifs
+            o: "username=${USERNAME},password=${PASSWORD},uid=1000,gid=1000"
+            device: "//${ADDRESS}/${NETPATH}"          
+services:          
+    jupyter-server:        
+        build: .        
+        shm_size: '64gb' 
+        ulimits: 
+            memlock: -1
+        user: docker
+        ipc: host
+        ports: 
+            - "8888:8888"
+    # entrypoint: /bin/bash
+        command: [jupyter,lab,--ip=0.0.0.0,--NotebookApp.allow_origin='https://colab.research.google.com']
+        volumes: 
+            - "notebooks:/home/docker/notebooks"
+        working_dir: /home/docker/notebooks         
+        deploy:
+            resources:
+                reservations:
+                    devices: 
+                     - capabilities: [gpu,utility,compute]
+      
+ 
