@@ -6,9 +6,12 @@ ENV NVM_DIR /home/docker/nvm
 ENV CONDA_DIR /home/docker/conda
 ENV PATH=/home/docker/.local/bin:/home/docker/conda/bin:$PATH
 # APT DEPENDENCIES
-RUN apt update && apt install -y tcl software-properties-common vim sudo xvfb
+RUN apt update && apt install -y tcl software-properties-common vim sudo xvfb swig3.0
 RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt install -y python3.10 python3-pip
+# SWIG3.0 SYM LINK
+RUN ln -s /usr/bin/swig3.0 /usr/bin/swig
+
 
 # ADD USERS
 RUN echo 'root:root' | chpasswd
