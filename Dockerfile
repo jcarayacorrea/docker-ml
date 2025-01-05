@@ -6,7 +6,7 @@ ENV NVM_DIR /home/docker/nvm
 ENV CONDA_DIR /home/docker/conda
 ENV PATH=/home/docker/.local/bin:/home/docker/conda/bin:$PATH
 # APT DEPENDENCIES
-RUN apt update && apt install -y tcl software-properties-common vim sudo xvfb swig3.0
+RUN apt update && apt install -y tcl software-properties-common vim sudo xvfb swig3.0 graphviz
 RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt install -y python3.10 python3-pip
 # SWIG3.0 SYM LINK
@@ -33,7 +33,6 @@ RUN conda init && conda update -n base conda
 RUN conda install -n base conda-libmamba-solver && conda config --set solver libmamba
 # Install Jupyterlab
 RUN conda install -n base jupyterlab
-
 
 
 
