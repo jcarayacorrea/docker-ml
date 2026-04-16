@@ -1,7 +1,5 @@
 name: ml-env
 channels:
-  - pytorch
-  - nvidia
   - conda-forge
   - defaults
 
@@ -20,12 +18,6 @@ dependencies:
   - joblib>=1.4
   - threadpoolctl>=3.5
 
-  # PyTorch ecosystem (GPU via CUDA 12.4)
-  - pytorch=2.11.0
-  - torchvision
-  - torchaudio
-  - pytorch-cuda=12.4
-
   # Development & notebooks
   - jupyterlab>=4.2
   - ipykernel>=6.29
@@ -40,6 +32,13 @@ dependencies:
   - pip
 
   - pip:
+      # PyTorch ecosystem (GPU via CUDA 12.4)
+      # conda install discontinued as of PyTorch 2.6.0 — must use pip
+      - --extra-index-url https://download.pytorch.org/whl/cu124
+      - torch>=2.6.0
+      - torchvision
+      - torchaudio
+
       # TensorFlow with GPU support (CUDA 12.x)
       - tensorflow[and-cuda]==2.21.0
       - keras>=3.7
