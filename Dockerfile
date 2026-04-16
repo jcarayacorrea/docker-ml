@@ -1,5 +1,13 @@
 FROM nvcr.io/nvidia/tensorrt:24.10-py3
 
+# Build arguments for reproducible, configurable versions
+ARG NVM_VERSION=0.39.7
+ARG ANACONDA_VERSION=2024.10-1
+
+LABEL maintainer="Juan Carlos Araya Correa" \
+      description="ML JupyterLab environment with CUDA 11.8/12.x, PyTorch, TensorFlow" \
+      version="1.0"
+
 # ENVIRONMENT VARIABLES
 ENV DEBIAN_FRONTEND=noninteractive \
     LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-11.8/lib64:/usr/local/cuda-12.5/lib64 \
@@ -7,7 +15,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     CONDA_DIR=/home/docker/conda \
     PATH=/home/docker/.local/bin:/home/docker/conda/bin:$PATH
 
-# APT DEPENDENCIES AND USERS
+# APT DEPENDENCIES AND USER SETUP
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tcl \
     software-properties-common \
@@ -31,18 +39,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && echo "docker ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
     && rm -rf /var/lib/apt/lists/*
 
-# CUDA INSTALLATION (from cuda11.4.sh script)
-# Note: The script installs CUDA 11.8 despite its name.
-# Executing the steps from the script directly in the Dockerfile for better layer management.
-RUN cd /tmp \
-    && wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin \
-    && mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 \
-    && wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb \
+# CUDA 11.8 INSTALLATION
+RUN wget -q -P /tmp \
+        https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin \
+    && mv /tmp/cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 \
+    && wget -q -P /tmp \
+        https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb \
     && dpkg -i /tmp/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb \
     && cp /var/cuda-repo-ubuntu2204-11-8-local/cuda-*-keyring.gpg /usr/share/keyrings/ \
     && apt-get update \
-    && apt-get -y install cuda-11-8 \
+    && apt-get install -y --no-install-recommends cuda-11-8 \
     && rm /tmp/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb \
+    && rm -rf /var/cuda-repo-ubuntu2204-11-8-local \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy conda environment files
@@ -51,16 +59,18 @@ COPY --chown=docker:docker environment.yml environment-old.yml /home/docker/
 USER docker
 WORKDIR /home/docker
 
-# Install NVM
+# Install NVM and Node.js LTS
 RUN mkdir -p $NVM_DIR \
-    && curl --silent -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash \
+    && curl --silent -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
     && nvm install --lts
 
-# Install CONDA and JupyterLab
-RUN curl --silent -L https://repo.anaconda.com/archive/Anaconda3-2024.10-1-Linux-x86_64.sh -o /home/docker/conda_installer.sh \
-    && bash /home/docker/conda_installer.sh -b -p ${CONDA_DIR} \
-    && rm /home/docker/conda_installer.sh \
+# Install Conda and JupyterLab
+RUN curl --silent -L \
+        https://repo.anaconda.com/archive/Anaconda3-${ANACONDA_VERSION}-Linux-x86_64.sh \
+        -o /tmp/conda_installer.sh \
+    && bash /tmp/conda_installer.sh -b -p ${CONDA_DIR} \
+    && rm /tmp/conda_installer.sh \
     && . ${CONDA_DIR}/etc/profile.d/conda.sh \
     && conda init bash \
     && conda update -n base -c defaults conda -y \
@@ -84,4 +94,7 @@ RUN . ${CONDA_DIR}/etc/profile.d/conda.sh \
 
 EXPOSE 8888
 
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--NotebookApp.token=''", "--NotebookApp.password=''"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8888/api || exit 1
+
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--ServerApp.token=", "--ServerApp.password="]

@@ -8,6 +8,7 @@ volumes:
 services:
   jupyter-server:
     build: .
+    image: docker-ml:latest
     user: docker
     restart: unless-stopped
     ipc: host
@@ -18,9 +19,9 @@ services:
     command: [
       "jupyter", "lab",
       "--ip=0.0.0.0",
-      "--NotebookApp.token=''",
-      "--NotebookApp.password=''",
-      "--NotebookApp.allow_origin='https://colab.research.google.com'"
+      "--ServerApp.token=",
+      "--ServerApp.password=",
+      "--ServerApp.allow_origin=https://colab.research.google.com"
     ]
     volumes:
       - "notebooks:/home/docker/notebooks"
@@ -29,6 +30,6 @@ services:
       resources:
         reservations:
           devices:
-            - capabilities: [gpu, utility, compute]
-      
- 
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

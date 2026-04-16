@@ -1,0 +1,9 @@
+.git
+.gitignore
+.gitattributes
+.idea
+.claude
+*.md
+*.txt
+rootless.txt
+changedatadirectory.txt
