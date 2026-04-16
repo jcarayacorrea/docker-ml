@@ -1,0 +1,58 @@
+name: ml-env-old
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11
+
+  # Core scientific computing
+  - numpy>=1.26,<2.0
+  - scipy>=1.13
+  - pandas>=2.1
+  - matplotlib>=3.8
+  - seaborn>=0.13
+
+  # Machine learning
+  - scikit-learn=1.5.2
+  - joblib>=1.4
+  - threadpoolctl>=3.5
+
+  # PyTorch ecosystem (GPU via CUDA 11.8)
+  - pytorch=2.5.0
+  - torchvision=0.20.0
+  - torchaudio=2.5.0
+  - pytorch-cuda=11.8
+
+  # Development & notebooks
+  - jupyterlab>=4.2
+  - ipykernel>=6.29
+  - ipywidgets>=8.1
+  - tqdm>=4.66
+  - pillow>=10.4
+
+  # Data formats & utilities
+  - h5py>=3.11
+  - pyyaml>=6.0
+  - requests>=2.32
+  - pip
+
+  - pip:
+      # TensorFlow with GPU support (CUDA 11.x)
+      - tensorflow[and-cuda]==2.18.0
+      - keras>=3.5
+
+      # PyTorch utilities
+      - torchmetrics>=1.4
+      - lightning>=2.4
+
+      # ML experiment tracking
+      - mlflow>=2.17
+      - tensorboard>=2.18
+
+      # Additional utilities
+      - optuna>=4.0
+      - imbalanced-learn>=0.12
+      - shap>=0.46
