@@ -1,19 +1,20 @@
-FROM nvcr.io/nvidia/tensorrt:24.10-py3
+FROM nvcr.io/nvidia/rapidsai/notebooks:25.06-cuda12.8-py3.10
 
 # Build arguments for reproducible, configurable versions
 ARG NVM_VERSION=0.39.7
-ARG ANACONDA_VERSION=2024.10-1
+ARG CUDA_KEYRING_VERSION=1.1-1
 
 LABEL maintainer="Juan Carlos Araya Correa" \
-      description="ML JupyterLab environment with CUDA 11.8/12.x, PyTorch, TensorFlow" \
+      description="ML JupyterLab environment with CUDA 12.8, PyTorch, TensorFlow" \
       version="1.0"
 
 # ENVIRONMENT VARIABLES
 ENV DEBIAN_FRONTEND=noninteractive \
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-11.8/lib64:/usr/local/cuda-12.5/lib64 \
+    CUDA_HOME=/usr/local/cuda-12.8 \
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-12.8/lib64 \
     NVM_DIR=/home/docker/nvm \
     CONDA_DIR=/home/docker/conda \
-    PATH=/home/docker/.local/bin:/home/docker/conda/bin:$PATH
+    PATH=/usr/local/cuda-12.8/bin:/home/docker/.local/bin:/home/docker/conda/bin:$PATH
 
 # APT DEPENDENCIES AND USER SETUP
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -39,18 +40,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && echo "docker ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
     && rm -rf /var/lib/apt/lists/*
 
-# CUDA 11.8 INSTALLATION
+# CUDA 12.8 TOOLKIT INSTALLATION
 RUN wget -q -P /tmp \
-        https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin \
-    && mv /tmp/cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 \
-    && wget -q -P /tmp \
-        https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb \
-    && dpkg -i /tmp/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb \
-    && cp /var/cuda-repo-ubuntu2204-11-8-local/cuda-*-keyring.gpg /usr/share/keyrings/ \
+        https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_${CUDA_KEYRING_VERSION}_all.deb \
+    && dpkg -i /tmp/cuda-keyring_${CUDA_KEYRING_VERSION}_all.deb \
     && apt-get update \
-    && apt-get install -y --no-install-recommends cuda-11-8 \
-    && rm /tmp/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb \
-    && rm -rf /var/cuda-repo-ubuntu2204-11-8-local \
+    && apt-get install -y --no-install-recommends cuda-toolkit-12-8 \
+    && rm /tmp/cuda-keyring_${CUDA_KEYRING_VERSION}_all.deb \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy conda environment files
@@ -65,19 +61,7 @@ RUN mkdir -p $NVM_DIR \
     && . $NVM_DIR/nvm.sh \
     && nvm install --lts
 
-# Install Conda and JupyterLab
-RUN curl --silent -L \
-        https://repo.anaconda.com/archive/Anaconda3-${ANACONDA_VERSION}-Linux-x86_64.sh \
-        -o /tmp/conda_installer.sh \
-    && bash /tmp/conda_installer.sh -b -p ${CONDA_DIR} \
-    && rm /tmp/conda_installer.sh \
-    && . ${CONDA_DIR}/etc/profile.d/conda.sh \
-    && conda init bash \
-    && conda update -n base -c defaults conda -y \
-    && conda install -n base -c conda-forge conda-libmamba-solver -y \
-    && conda config --set solver libmamba \
-    && conda install -n base -c conda-forge jupyterlab -y \
-    && conda clean -afy
+
 
 # Create conda environments from environment files
 RUN . ${CONDA_DIR}/etc/profile.d/conda.sh \
@@ -88,7 +72,7 @@ RUN . ${CONDA_DIR}/etc/profile.d/conda.sh \
 # Register both environments as Jupyter kernels
 RUN . ${CONDA_DIR}/etc/profile.d/conda.sh \
     && conda run -n ml-env python -m ipykernel install --user \
-        --name ml-env --display-name "ML Env (Python 3.12 / CUDA 12.4)" \
+        --name ml-env --display-name "ML Env (Python 3.12 / CUDA 12.8)" \
     && conda run -n ml-env-old python -m ipykernel install --user \
         --name ml-env-old --display-name "ML Env Old (Python 3.11 / CUDA 11.8)"
 
